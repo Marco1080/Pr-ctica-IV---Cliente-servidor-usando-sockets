@@ -6,16 +6,10 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
-        /*
-        int multiverseId = 1;
-        Card card = CardAPI.getCard(multiverseId);
-        System.out.println(card);
-        */
-
-        List<Card> cards = CardAPI.getAllCards();
-        for (Card currentCard: cards) {
-            System.out.println(currentCard);
-        }
+        System.out.println(
+                "1-Listar cartas." +
+                        "\n2-Añadir nueva carta al mazo" +
+                        "\n0-Salir");
 
     }
 }
