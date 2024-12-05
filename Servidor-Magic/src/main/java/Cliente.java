@@ -21,7 +21,7 @@ public class Cliente implements Runnable {
         } catch (IOException ex) {
             Logger.getLogger(Cliente.class.getName()).log(Level.SEVERE, null, ex);
         }
-    } 
+    }
 
     @Override
     public void run() {
