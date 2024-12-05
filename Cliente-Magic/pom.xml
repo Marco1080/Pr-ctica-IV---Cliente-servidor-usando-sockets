@@ -13,5 +13,11 @@
         <maven.compiler.target>22</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
+    <dependencies>
+        <dependency>
+            <groupId>io.magicthegathering</groupId>
+            <artifactId>javasdk</artifactId>
+            <version>0.0.18</version>
+        </dependency>
+    </dependencies>
 </project>
