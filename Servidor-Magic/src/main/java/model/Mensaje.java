@@ -27,6 +27,14 @@ public class Mensaje {
 
     // Getters y setters
 
+
+    public Mensaje(Usuario usuarioEmisor, Usuario usuarioReceptor, String contenido, LocalDateTime fechaEnvio) {
+        this.usuarioEmisor = usuarioEmisor;
+        this.usuarioReceptor = usuarioReceptor;
+        this.contenido = contenido;
+        this.fechaEnvio = fechaEnvio;
+    }
+
     public Long getId() {
         return id;
     }

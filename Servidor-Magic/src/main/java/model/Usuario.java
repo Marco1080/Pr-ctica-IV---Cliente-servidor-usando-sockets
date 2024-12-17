@@ -11,26 +11,22 @@ public class Usuario {
     @Column
     private String username;
 
-    @Column(nullable = false, unique = true)
-    private String nombre;
-
     @OneToMany(mappedBy = "usuarioEmisor", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Mensaje> mensajesEnviados;
 
     @OneToMany(mappedBy = "usuarioReceptor", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Mensaje> mensajesRecibidos;
 
+    public Usuario(String username) {
+        this.username = username;
+    }
 
     public void setUsername(String username) {
         this.username = username;
     }
 
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
+    public String getUsername() {
+        return username;
     }
 
     public Set<Mensaje> getMensajesEnviados() {
