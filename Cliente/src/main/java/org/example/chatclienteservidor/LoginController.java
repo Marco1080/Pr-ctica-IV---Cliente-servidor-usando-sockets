@@ -9,8 +9,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.*;
-import java.net.Socket;
+import java.security.KeyStore;
 
 public class LoginController {
     @FXML
@@ -19,7 +21,7 @@ public class LoginController {
     @FXML
     private TextField passwordField;
 
-    private Socket socket;
+    private SSLSocket socket;
 
     @FXML
     private Button loginButton;
@@ -30,10 +32,10 @@ public class LoginController {
         String password = passwordField.getText();
 
         try {
-            socket = new Socket("localhost", 8080);
+            socket = configurarSSL();
 
             if (socket.isConnected()) {
-                System.out.println("Conexión establecida con el servidor.");
+                System.out.println("Conexión segura establecida con el servidor.");
 
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -42,24 +44,33 @@ public class LoginController {
                 writer.println(password);
 
                 String response = reader.readLine();
+
                 if ("200".equals(response)) {
                     System.out.println("Login exitoso. Código 200 recibido.");
-                    cambiarVistaMenu();
+                    String rol = reader.readLine();
+                    cambiarVistaMenu(rol);
                 } else {
                     mostrarError("Login fallido. Código de respuesta: " + response);
                 }
             } else {
                 mostrarError("No se pudo conectar al servidor.");
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             mostrarError("Error al conectar al servidor: " + e.getMessage());
         }
     }
 
-    private void cambiarVistaMenu() {
+    private SSLSocket configurarSSL() throws Exception {
+        SSLSocketFactory socketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+        return (SSLSocket) socketFactory.createSocket("localhost", 8080);
+    }
+
+    private void cambiarVistaMenu(String rol) {
         try {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("hello-view.fxml"));
+            HelloController controller = new HelloController(socket, rol);
+            fxmlLoader.setController(controller);
             Scene scene = new Scene(fxmlLoader.load(), 420, 340);
 
             String cssFile = getClass().getResource("/styles/styles.css").toExternalForm();
@@ -81,3 +92,4 @@ public class LoginController {
         alert.showAndWait();
     }
 }
+

@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 public class MensajesController {
 
     private Socket socket;
+    private String rolUser;
     @FXML
     private TableView<MensajeView> messageTable;
 
@@ -42,8 +43,9 @@ public class MensajesController {
 
     private volatile boolean listening = true;
 
-    public MensajesController(Socket socket) {
+    public MensajesController(Socket socket, String rolUser) {
         this.socket = socket;
+        this.rolUser = rolUser;
     }
 
     @FXML

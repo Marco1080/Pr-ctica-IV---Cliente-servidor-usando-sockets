@@ -2,12 +2,11 @@ import model.Usuario;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
+import javax.net.ssl.*;
+import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 public class Main {
 
@@ -15,26 +14,78 @@ public class Main {
 
     public static void main(String[] args) {
         Session session = HibernateUtil.getSessionFactory().openSession();
-        try (ServerSocket socketServidor = new ServerSocket(PUERTO)) {
-            System.out.println("Servidor iniciado en el puerto " + PUERTO);
+        try (SSLServerSocket serverSocket = configurarSSL()) {
+            System.out.println("Servidor seguro escuchando en el puerto " + PUERTO);
             while (true) {
-                Socket socketCliente = socketServidor.accept();
-                PrintWriter entradaSocketCliente = new PrintWriter(socketCliente.getOutputStream(), true);
-                BufferedReader salidaSocketCliente = new BufferedReader(new InputStreamReader(socketCliente.getInputStream()));
+                SSLSocket socket = (SSLSocket) serverSocket.accept();
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
-                String usuarioUsername = salidaSocketCliente.readLine();
+                String usuarioUsername = in.readLine();
+                String usuarioPassword = in.readLine();
 
-                String usuarioEnviarUsername = salidaSocketCliente.readLine();
+                byte[] passwordHash = hashPassword(usuarioPassword);
 
-                Usuario usuario = getUsuario(session, usuarioUsername);
-                Usuario usuarioEnviar = getUsuario(session, usuarioEnviarUsername);
+                Usuario usuario = autenticarUsuario(session, usuarioUsername, passwordHash);
+                if (usuario == null) {
+                    out.println("404");
+                    socket.close();
+                    continue;
+                }
 
-                new Thread(new ClienteEnviar(socketCliente, usuario, usuarioEnviar)).start();
-                new Thread(new ClienteRecibir(socketCliente, usuarioEnviar, usuario)).start();
+                out.println("200");
+                out.println(usuario.getRole());
+
+                if ("admin".equalsIgnoreCase(usuario.getRole())) {
+                    String usuarioReceptorUsername = in.readLine();
+                    Usuario usuarioReceptor = getUsuario(session, usuarioReceptorUsername);
+
+                    new Thread(new ClienteEnviar(socket, usuario, usuarioReceptor)).start();
+                    new Thread(new ClienteRecibir(socket, usuarioReceptor, usuario)).start();
+                } else {
+                    out.println("Solo puedes leer mensajes.");
+                    new Thread(new ClienteRecibir(socket, null, usuario)).start();
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static SSLServerSocket configurarSSL() {
+        try {
+
+            SSLServerSocketFactory socketFactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+            return (SSLServerSocket) socketFactory.createServerSocket(PUERTO);
+        } catch (Exception e) {
+            throw new RuntimeException("Error al configurar SSL", e);
+        }
+    }
+
+    private static byte[] hashPassword(String password) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            return md.digest(password.getBytes());
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error al hashear:", e);
+        }
+    }
+
+    private static Usuario autenticarUsuario(Session session, String username, byte[] passwordHash) {
+        Transaction transaction = session.beginTransaction();
+        Usuario usuario = session.get(Usuario.class, username);
+
+        if (usuario == null || usuario.getPassword() == null) {
+            Usuario newUser = new Usuario(username, passwordHash, "user");
+            session.persist(newUser);
+            transaction.commit();
+            return newUser;
+        } else if (!Arrays.equals(usuario.getPassword(), passwordHash)) {
+            transaction.commit();
+            return null;
+        }
+        transaction.commit();
+        return usuario;
     }
 
     private static Usuario getUsuario(Session session, String username) {
@@ -42,7 +93,7 @@ public class Main {
         Usuario usuario = session.get(Usuario.class, username);
 
         if (usuario == null) {
-            usuario = new Usuario(username);
+            usuario = new Usuario(username, null, "user");
             session.persist(usuario);
         }
 

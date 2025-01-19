@@ -9,7 +9,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -17,15 +16,18 @@ import java.net.Socket;
 public class HelloController {
 
     @FXML
+    Button sendButton;
+    @FXML
     private TextField senderInput;
-
     @FXML
     private TextField receiverInput;
-
     private Socket socket;
+    private String rolUsuario;
 
-    @FXML
-    Button sendButton;
+    public HelloController(Socket socket, String rolUsuario) {
+        this.socket = socket;
+        this.rolUsuario = rolUsuario;
+    }
 
     @FXML
     protected void goTo() {
@@ -45,32 +47,23 @@ public class HelloController {
 
     @FXML
     protected void mensajesButtonOnClick() {
-        String username = senderInput.getText();
-        String recipient = receiverInput.getText();
 
-        if (username.isEmpty() || recipient.isEmpty()) {
-            System.err.println("Por favor, completa los campos de usuario y destinatario.");
-            return;
-        }
 
+        String receptor = receiverInput.getText();
         try {
-            socket = new Socket("localhost", 8080);
-
             if (socket.isConnected()) {
-                System.out.println("Conexión establecida con el servidor.");
 
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
-                writer.println(username);
-                writer.println(recipient);
+                writer.println(receptor);
 
                 mostrarMensajes();
             } else {
                 mostrarError("No se pudo conectar al servidor.");
             }
         } catch (IOException e) {
-            e.printStackTrace();
-            mostrarError("Error al conectar al servidor: " + e.getMessage());
+
         }
+
     }
 
 
@@ -86,7 +79,7 @@ public class HelloController {
     protected void mostrarMensajes() {
         try {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("mensajes-view.fxml"));
-            MensajesController controller = new MensajesController(socket);
+            MensajesController controller = new MensajesController(socket, this.rolUsuario);
             fxmlLoader.setController(controller);
 
             Parent root = fxmlLoader.load();
