@@ -4,6 +4,7 @@ import org.hibernate.Transaction;
 
 import javax.net.ssl.*;
 import java.io.*;
+import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -16,35 +17,41 @@ public class Main {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try (SSLServerSocket serverSocket = configurarSSL()) {
             System.out.println("Servidor seguro escuchando en el puerto " + PUERTO);
+
             while (true) {
-                SSLSocket socket = (SSLSocket) serverSocket.accept();
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                try{
+                    SSLSocket socket = (SSLSocket) serverSocket.accept();
+                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
-                String usuarioUsername = in.readLine();
-                String usuarioPassword = in.readLine();
+                    String usuarioUsername = in.readLine();
+                    String usuarioPassword = in.readLine();
 
-                byte[] passwordHash = hashPassword(usuarioPassword);
+                    byte[] passwordHash = hashPassword(usuarioPassword);
 
-                Usuario usuario = autenticarUsuario(session, usuarioUsername, passwordHash);
-                if (usuario == null) {
-                    out.println("404");
-                    socket.close();
-                    continue;
+                    Usuario usuario = autenticarUsuario(session, usuarioUsername, passwordHash);
+                    if (usuario == null) {
+                        out.println("404");
+                        socket.close();
+                        continue;
+                    }
+
+                    out.println("200");
+                    out.println(usuario.getRole());
+                    String usuarioReceptorUsername = in.readLine();
+                    Usuario usuarioReceptor = getUsuario(session, usuarioReceptorUsername);
+                    if ("admin".equalsIgnoreCase(usuario.getRole())) {
+
+
+                        new Thread(new ClienteEnviar(socket, usuario, usuarioReceptor)).start();
+                        new Thread(new ClienteRecibir(socket, usuarioReceptor, usuario)).start();
+                    } else {
+                        new Thread(new ClienteRecibir(socket, usuarioReceptor, usuario)).start();
+                    }
+                }catch (Exception e) {
+                    System.out.println(e.getMessage());
                 }
 
-                out.println("200");
-                out.println(usuario.getRole());
-                String usuarioReceptorUsername = in.readLine();
-                Usuario usuarioReceptor = getUsuario(session, usuarioReceptorUsername);
-                if ("admin".equalsIgnoreCase(usuario.getRole())) {
-
-
-                    new Thread(new ClienteEnviar(socket, usuario, usuarioReceptor)).start();
-                    new Thread(new ClienteRecibir(socket, usuarioReceptor, usuario)).start();
-                } else {
-                    new Thread(new ClienteRecibir(socket, usuarioReceptor, usuario)).start();
-                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -53,8 +60,18 @@ public class Main {
 
     private static SSLServerSocket configurarSSL() {
         try {
+            KeyStore keyStore = KeyStore.getInstance("JKS");
+            try (FileInputStream keyStoreStream = new FileInputStream("src/main/java/keystore.jks")) {
+                keyStore.load(keyStoreStream, "1234".toCharArray());
+            }
 
-            SSLServerSocketFactory socketFactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            keyManagerFactory.init(keyStore, "1234".toCharArray());
+
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+
+            SSLServerSocketFactory socketFactory = sslContext.getServerSocketFactory();
             return (SSLServerSocket) socketFactory.createServerSocket(PUERTO);
         } catch (Exception e) {
             throw new RuntimeException("Error al configurar SSL", e);

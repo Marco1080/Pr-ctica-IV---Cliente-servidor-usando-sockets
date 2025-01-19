@@ -9,8 +9,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
 import java.security.KeyStore;
 
@@ -62,7 +64,18 @@ public class LoginController {
     }
 
     private SSLSocket configurarSSL() throws Exception {
-        SSLSocketFactory socketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+        KeyStore trustStore = KeyStore.getInstance("JKS");
+        try (FileInputStream trustStoreStream = new FileInputStream("truststore.jks")) {
+            trustStore.load(trustStoreStream, "1234".toCharArray());
+        }
+
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(trustStore);
+
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+
+        SSLSocketFactory socketFactory = sslContext.getSocketFactory();
         return (SSLSocket) socketFactory.createSocket("localhost", 8080);
     }
 

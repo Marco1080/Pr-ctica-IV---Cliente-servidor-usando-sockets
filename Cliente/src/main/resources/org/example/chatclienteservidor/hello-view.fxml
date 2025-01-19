@@ -6,14 +6,13 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml" fx:controller="org.example.chatclienteservidor.HelloController">
+<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml" >
     <padding>
         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
     </padding>
 
-    <Label fx:id="welcomeText" text="Servidor" styleClass="welcome-label"/>
+    <Label fx:id="welcomeText" text="Inserta receptor" styleClass="welcome-label"/>
 
-    <TextField fx:id="senderInput" promptText="Emisor" focusTraversable="false"/>
     <TextField fx:id="receiverInput" promptText="Receptor" focusTraversable="false"/>
     <Button fx:id="sendButton" text="Mostrar mensajes" onMouseClicked="#goTo" focusTraversable="false" styleClass="chat-button"/>
 
