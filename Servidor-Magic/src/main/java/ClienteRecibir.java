@@ -35,10 +35,11 @@ public class ClienteRecibir implements Runnable {
 
     @Override
     public void run() {
+        getMensajes(session);
         while (true) {
-            leerYEnviarMensajes();
+            leerMensajes();
             try {
-                Thread.sleep(2000); // Intervalo para verificar nuevos mensajes
+                Thread.sleep(2000);
             } catch (InterruptedException e) {
                 Logger.getLogger(ClienteRecibir.class.getName()).log(Level.SEVERE, "Error en el hilo de escucha", e);
                 Thread.currentThread().interrupt();
@@ -47,9 +48,9 @@ public class ClienteRecibir implements Runnable {
         }
     }
 
-    private void leerYEnviarMensajes() {
+    private void leerMensajes() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            List<Mensaje> mensajes = obtenerMensajesNoLeidos(session);
+            List<Mensaje> mensajes = getMensajesNoLeidos(session);
 
             for (Mensaje mensaje : mensajes) {
                 entradaSocketCliente.println(
@@ -63,7 +64,7 @@ public class ClienteRecibir implements Runnable {
         }
     }
 
-    private List<Mensaje> obtenerMensajesNoLeidos(Session session) {
+    private List<Mensaje> getMensajesNoLeidos(Session session) {
         Query<Mensaje> query = session.createQuery(
                 "FROM Mensaje WHERE usuarioReceptor = :usuarioReceptor AND usuarioEmisor = :usuarioEmisor AND leido = false ORDER BY fechaEnvio ASC",
                 Mensaje.class
@@ -78,7 +79,7 @@ public class ClienteRecibir implements Runnable {
         Transaction transaction = session.beginTransaction();
         try {
             mensaje.setLeido(true);
-            session.update(mensaje);
+            session.merge(mensaje);
             transaction.commit();
         } catch (Exception e) {
             transaction.rollback();
