@@ -4,8 +4,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Button;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -15,47 +15,62 @@ import java.net.Socket;
 public class HelloController {
 
     @FXML
-    private TextField usernameField;
+    private TextField senderInput;
 
     @FXML
-    private TextField recipientField;
-
-    @FXML
-    private Button connectButton;
+    private TextField receiverInput;
 
     private Socket socket;
-    private PrintWriter socketWriter;
 
     @FXML
     protected void mensajesButtonOnClick() {
-        String username = usernameField.getText();
-        String recipient = recipientField.getText();
+        String username = senderInput.getText();
+        String recipient = receiverInput.getText();
+
+        if (username.isEmpty() || recipient.isEmpty()) {
+            System.err.println("Por favor, completa los campos de usuario y destinatario.");
+            return;
+        }
 
         try {
-            socket = new Socket("localhost", 80);
-            socketWriter = new PrintWriter(socket.getOutputStream(), true);
+            socket = new Socket("localhost", 8080);
 
-            socketWriter.println(username);
-            socketWriter.println(recipient);
+            if (socket.isConnected()) {
+                System.out.println("Conexión establecida con el servidor.");
 
-            mostrarMensajes();
+                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+                writer.println(username);
+                writer.println(recipient);
+
+                mostrarMensajes();
+            } else {
+                mostrarError("No se pudo conectar al servidor.");
+            }
         } catch (IOException e) {
             e.printStackTrace();
-            System.err.println("Error al conectar al servidor o enviar datos.");
+            mostrarError("Error al conectar al servidor: " + e.getMessage());
         }
+    }
+
+    private void mostrarError(String mensaje) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error de Conexión");
+        alert.setHeaderText("No se pudo conectar al servidor");
+        alert.setContentText(mensaje);
+        alert.showAndWait();
     }
 
     @FXML
     protected void mostrarMensajes() {
         try {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("mensajes-view.fxml"));
-            MensajesController controller = new MensajesController(socket); // Pasar el socket al controlador
+            MensajesController controller = new MensajesController(socket);
             fxmlLoader.setController(controller);
 
             Parent root = fxmlLoader.load();
             Scene scene = new Scene(root, 600, 400);
 
-            Stage stage = (Stage) connectButton.getScene().getWindow();
+            Stage stage = (Stage) senderInput.getScene().getWindow();
             stage.setScene(scene);
             stage.setTitle("Mensajes");
         } catch (IOException e) {
@@ -63,6 +78,5 @@ public class HelloController {
             System.err.println("No se pudo cargar la vista mensajes-view.fxml.");
         }
     }
-
 }
 

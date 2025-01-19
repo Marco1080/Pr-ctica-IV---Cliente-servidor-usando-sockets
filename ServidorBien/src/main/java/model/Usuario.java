@@ -12,6 +12,9 @@ public class Usuario {
     @Column
     private String username;
 
+    public Usuario() {
+    }
+
     @OneToMany(mappedBy = "usuarioEmisor", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Mensaje> mensajesEnviados;
 

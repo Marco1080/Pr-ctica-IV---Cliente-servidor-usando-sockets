@@ -35,7 +35,7 @@ public class ClienteRecibir implements Runnable {
 
     @Override
     public void run() {
-        getMensajes(session);
+        getMensajes();
         while (true) {
             leerMensajes();
             try {
@@ -47,6 +47,32 @@ public class ClienteRecibir implements Runnable {
             }
         }
     }
+
+    private void getMensajes() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<Mensaje> query = session.createQuery(
+                    "FROM Mensaje WHERE ((usuarioReceptor = :usuarioReceptor AND usuarioEmisor = :usuarioEmisor) " +
+                            "OR (usuarioReceptor = :usuarioEmisor AND usuarioEmisor = :usuarioReceptor)) " +
+                            "ORDER BY fechaEnvio ASC", Mensaje.class
+            );
+            query.setParameter("usuarioReceptor", usuario);
+            query.setParameter("usuarioEmisor", usuarioEmisor);
+
+            List<Mensaje> mensajes = query.getResultList();
+
+            for (Mensaje mensaje : mensajes) {
+                entradaSocketCliente.println(
+                        mensaje.getUsuarioEmisor().getUsername() + ": " + mensaje.getContenido() + " --- " + mensaje.getFechaEnvio()
+                );
+
+                marcarMensajeComoLeido(session, mensaje);
+            }
+        } catch (Exception e) {
+            Logger.getLogger(ClienteRecibir.class.getName()).log(Level.SEVERE, "Error al recuperar mensajes", e);
+        }
+    }
+
+
 
     private void leerMensajes() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -69,8 +95,8 @@ public class ClienteRecibir implements Runnable {
                 "FROM Mensaje WHERE usuarioReceptor = :usuarioReceptor AND usuarioEmisor = :usuarioEmisor AND leido = false ORDER BY fechaEnvio ASC",
                 Mensaje.class
         );
-        query.setParameter("usuarioReceptor", usuario);
-        query.setParameter("usuarioEmisor", usuarioEmisor);
+        query.setParameter("usuarioReceptor", usuarioEmisor);
+        query.setParameter("usuarioEmisor", usuario);
 
         return query.getResultList();
     }
