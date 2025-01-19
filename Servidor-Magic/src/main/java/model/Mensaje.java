@@ -7,6 +7,14 @@ import java.time.LocalDateTime;
 @Table(name = "mensajes")
 public class Mensaje {
 
+    public Mensaje() {}
+
+    public Mensaje(Usuario usuarioEmisor, Usuario usuarioReceptor, String contenido) {
+        this.usuarioEmisor = usuarioEmisor;
+        this.usuarioReceptor = usuarioReceptor;
+        this.contenido = contenido;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -23,17 +31,10 @@ public class Mensaje {
     private String contenido;
 
     @Column(nullable = false)
-    private LocalDateTime fechaEnvio;
+    private LocalDateTime fechaEnvio = LocalDateTime.now();
 
-    // Getters y setters
-
-
-    public Mensaje(Usuario usuarioEmisor, Usuario usuarioReceptor, String contenido, LocalDateTime fechaEnvio) {
-        this.usuarioEmisor = usuarioEmisor;
-        this.usuarioReceptor = usuarioReceptor;
-        this.contenido = contenido;
-        this.fechaEnvio = fechaEnvio;
-    }
+    @Column(nullable = false)
+    private boolean leido = false;
 
     public Long getId() {
         return id;
@@ -71,8 +72,11 @@ public class Mensaje {
         return fechaEnvio;
     }
 
-    public void setFechaEnvio(LocalDateTime fechaEnvio) {
-        this.fechaEnvio = fechaEnvio;
+    public boolean isLeido() {
+        return leido;
+    }
+
+    public void setLeido(boolean leido) {
+        this.leido = leido;
     }
 }
-

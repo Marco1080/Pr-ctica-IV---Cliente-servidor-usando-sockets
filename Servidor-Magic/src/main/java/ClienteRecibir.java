@@ -1,6 +1,7 @@
 import model.Mensaje;
 import model.Usuario;
 import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
 import java.io.BufferedReader;
@@ -8,56 +9,90 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ClienteRecibir implements Runnable {
-    private Socket socket;
-    private Usuario usuario;
-    private Usuario usuarioEnviado;
-    PrintWriter entradaSocketCliente;
-    BufferedReader salidaSocketCliente;
-    ArrayList<String> listaCartas;
 
-    public ClienteRecibir(Socket socket, Usuario usuario, Usuario usuarioEnviado) {
+    private final Socket socket;
+    private final Usuario usuario;
+    private final Usuario usuarioEmisor;
+    private final PrintWriter entradaSocketCliente;
+    private final BufferedReader salidaSocketCliente;
+
+    public ClienteRecibir(Socket socket, Usuario usuario, Usuario usuarioEmisor) {
         try {
             this.socket = socket;
-            entradaSocketCliente = new PrintWriter(socket.getOutputStream(), true);
-            salidaSocketCliente = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            this.entradaSocketCliente = new PrintWriter(socket.getOutputStream(), true);
+            this.salidaSocketCliente = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.usuario = usuario;
-            this.usuarioEnviado = usuarioEnviado;
+            this.usuarioEmisor = usuarioEmisor;
         } catch (IOException ex) {
-            Logger.getLogger(ClienteRecibir.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException("Error al inicializar ClienteRecibir", ex);
         }
     }
 
     @Override
     public void run() {
-        List<Mensaje> mensajes;
+        while (true) {
+            leerYEnviarMensajes();
+            try {
+                Thread.sleep(2000); // Intervalo para verificar nuevos mensajes
+            } catch (InterruptedException e) {
+                Logger.getLogger(ClienteRecibir.class.getName()).log(Level.SEVERE, "Error en el hilo de escucha", e);
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+    }
+
+    private void leerYEnviarMensajes() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            List<Mensaje> mensajes = obtenerMensajesNoLeidos(session);
 
-            Query<Mensaje> mensajeQuery = session.createQuery("FROM Mensaje WHERE (usuarioReceptor = :usuarioReceptor AND usuarioEmisor = :usuarioEmisor) OR (usuarioEmisor = :usuarioReceptor AND usuarioReceptor = :usuarioEmisor) order by fechaEmisor asc", Mensaje.class);
-            mensajeQuery.setParameter("usuarioReceptor", this.usuario.getUsername());
-            mensajeQuery.setParameter("usuarioEmisor", this.usuarioEnviado.getUsername());
-            mensajes = mensajeQuery.getResultList();
-            entradaSocketCliente.println(mensajes.size());
-            for (Mensaje mensaje : mensajes){
-                entradaSocketCliente.println(mensaje.getUsuarioEmisor().getUsername() + ": " + mensaje.getContenido() + " --- " + mensaje.getFechaEnvio());
+            for (Mensaje mensaje : mensajes) {
+                entradaSocketCliente.println(
+                        mensaje.getUsuarioEmisor().getUsername() + ": " + mensaje.getContenido() + " --- " + mensaje.getFechaEnvio()
+                );
+
+                marcarMensajeComoLeido(session, mensaje);
             }
-            boolean exit = false;
-            while (!exit){
-                Mensaje mensajeNuevo = recibirMensaje();
-
-                entradaSocketCliente.println(mensajeNuevo.getUsuarioEmisor().getUsername() + ": " + mensajeNuevo.getContenido() + " --- " + mensajeNuevo.getFechaEnvio());
-            }
-
+        } catch (Exception e) {
+            Logger.getLogger(ClienteRecibir.class.getName()).log(Level.SEVERE, "Error al leer mensajes", e);
         }
+    }
 
+    private List<Mensaje> obtenerMensajesNoLeidos(Session session) {
+        Query<Mensaje> query = session.createQuery(
+                "FROM Mensaje WHERE usuarioReceptor = :usuarioReceptor AND usuarioEmisor = :usuarioEmisor AND leido = false ORDER BY fechaEnvio ASC",
+                Mensaje.class
+        );
+        query.setParameter("usuarioReceptor", usuario);
+        query.setParameter("usuarioEmisor", usuarioEmisor);
+
+        return query.getResultList();
+    }
+
+    private void marcarMensajeComoLeido(Session session, Mensaje mensaje) {
+        Transaction transaction = session.beginTransaction();
+        try {
+            mensaje.setLeido(true);
+            session.update(mensaje);
+            transaction.commit();
+        } catch (Exception e) {
+            transaction.rollback();
+            Logger.getLogger(ClienteRecibir.class.getName()).log(Level.SEVERE, "Error al marcar mensaje como leído", e);
         }
+    }
 
-    private Mensaje recibirMensaje() {
-        return null;
+    private void cerrarRecursos() {
+        try {
+            salidaSocketCliente.close();
+            entradaSocketCliente.close();
+            socket.close();
+        } catch (IOException e) {
+            Logger.getLogger(ClienteRecibir.class.getName()).log(Level.SEVERE, "Error al cerrar los recursos", e);
+        }
     }
 }

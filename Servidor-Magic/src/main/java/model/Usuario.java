@@ -1,6 +1,7 @@
 package model;
 
 import jakarta.persistence.*;
+
 import java.util.Set;
 
 @Entity
@@ -21,12 +22,12 @@ public class Usuario {
         this.username = username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     public String getUsername() {
         return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public Set<Mensaje> getMensajesEnviados() {
