@@ -73,3 +73,52 @@
 .back-button:hover {
     -fx-background-color: #E64A19;
 }
+
+.welcome-label {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #4CAF50;
+    -fx-padding: 10;
+    -fx-text-alignment: center;
+}
+
+.input-field {
+    -fx-font-size: 16px;
+    -fx-padding: 10;
+    -fx-border-color: #4CAF50;
+    -fx-border-width: 2px;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-background-color: #F9F9F9;
+    -fx-pref-width: 300;
+}
+
+.login-button {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-background-color: #4CAF50;
+    -fx-padding: 10 20;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-cursor: hand;
+}
+
+.login-button:hover {
+    -fx-background-color: #45A049;
+}
+
+.back-button {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-background-color: #FF5722;
+    -fx-padding: 10 20;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-cursor: hand;
+}
+
+.back-button:hover {
+    -fx-background-color: #E64A19;
+}

@@ -15,6 +15,6 @@
 
     <TextField fx:id="senderInput" promptText="Emisor" focusTraversable="false"/>
     <TextField fx:id="receiverInput" promptText="Receptor" focusTraversable="false"/>
-    <Button text="Mostrar mensajes" onMouseClicked="#mensajesButtonOnClick" focusTraversable="false" styleClass="chat-button"/>
+    <Button fx:id="sendButton" text="Mostrar mensajes" onMouseClicked="#goTo" focusTraversable="false" styleClass="chat-button"/>
 
 </VBox>

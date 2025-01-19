@@ -5,9 +5,11 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -21,6 +23,25 @@ public class HelloController {
     private TextField receiverInput;
 
     private Socket socket;
+
+    @FXML
+    Button sendButton;
+
+    @FXML
+    protected void goTo() {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("mensajes-view.fxml"));
+            Scene scene = new Scene(fxmlLoader.load(), 420, 340);
+
+            String cssFile = getClass().getResource("/styles/styles.css").toExternalForm();
+            scene.getStylesheets().add(cssFile);
+
+            Stage stage = (Stage) sendButton.getScene().getWindow();
+            stage.setScene(scene);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @FXML
     protected void mensajesButtonOnClick() {
@@ -51,6 +72,7 @@ public class HelloController {
             mostrarError("Error al conectar al servidor: " + e.getMessage());
         }
     }
+
 
     private void mostrarError(String mensaje) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
