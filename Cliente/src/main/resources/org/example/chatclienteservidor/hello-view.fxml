@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml" fx:controller="org.example.chatclienteservidor.HelloController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+    </padding>
+
+    <Label fx:id="welcomeText" text="Servidor" styleClass="welcome-label"/>
+
+    <TextField fx:id="senderInput" promptText="Emisor" focusTraversable="false"/>
+    <TextField fx:id="receiverInput" promptText="Receptor" focusTraversable="false"/>
+    <Button text="Mostrar mensajes" onMouseClicked="#mensajesButtonOnClick" focusTraversable="false" styleClass="chat-button"/>
+
+</VBox>
