@@ -1,3 +1,4 @@
+import model.Mensaje;
 import model.Usuario;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -7,6 +8,7 @@ import java.io.*;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Date;
 import java.util.Arrays;
 
 public class Main {
@@ -15,6 +17,7 @@ public class Main {
 
     public static void main(String[] args) {
         Session session = HibernateUtil.getSessionFactory().openSession();
+        inicializarDatos(session);
         try (SSLServerSocket serverSocket = configurarSSL()) {
             System.out.println("Servidor seguro escuchando en el puerto " + PUERTO);
 
@@ -57,6 +60,27 @@ public class Main {
             e.printStackTrace();
         }
     }
+
+    public static void inicializarDatos(Session session) {
+        Transaction transaction = session.beginTransaction();
+
+        try {
+            byte[] passwordAdmin = hashPassword("admin123");
+            byte[] passwordUser = hashPassword("user123");
+
+            Usuario admin = new Usuario("admin", passwordAdmin, "admin");
+            Usuario user = new Usuario("user1", passwordUser, "user");
+
+            session.persist(admin);
+            session.persist(user);
+
+            transaction.commit();
+        } catch (Exception e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
+    }
+
 
     private static SSLServerSocket configurarSSL() {
         try {
