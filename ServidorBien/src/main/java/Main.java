@@ -35,16 +35,15 @@ public class Main {
 
                 out.println("200");
                 out.println(usuario.getRole());
-
+                String usuarioReceptorUsername = in.readLine();
+                Usuario usuarioReceptor = getUsuario(session, usuarioReceptorUsername);
                 if ("admin".equalsIgnoreCase(usuario.getRole())) {
-                    String usuarioReceptorUsername = in.readLine();
-                    Usuario usuarioReceptor = getUsuario(session, usuarioReceptorUsername);
+
 
                     new Thread(new ClienteEnviar(socket, usuario, usuarioReceptor)).start();
                     new Thread(new ClienteRecibir(socket, usuarioReceptor, usuario)).start();
                 } else {
-                    out.println("Solo puedes leer mensajes.");
-                    new Thread(new ClienteRecibir(socket, null, usuario)).start();
+                    new Thread(new ClienteRecibir(socket, usuarioReceptor, usuario)).start();
                 }
             }
         } catch (IOException e) {

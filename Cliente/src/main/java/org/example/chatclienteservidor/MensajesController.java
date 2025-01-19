@@ -7,7 +7,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.VBox;
+import javafx.scene.control.Alert;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,6 +21,7 @@ public class MensajesController {
 
     private Socket socket;
     private String rolUser;
+
     @FXML
     private TableView<MensajeView> messageTable;
 
@@ -41,6 +43,9 @@ public class MensajesController {
     @FXML
     private Button buttonVolver;
 
+    @FXML
+    private VBox adminPanel;
+
     private volatile boolean listening = true;
 
     public MensajesController(Socket socket, String rolUser) {
@@ -50,6 +55,8 @@ public class MensajesController {
 
     @FXML
     public void initialize() {
+        configureViewByRole();
+
         sendButton.setOnMouseClicked(event -> sendMessage());
 
         userColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getUsuario()));
@@ -57,6 +64,18 @@ public class MensajesController {
         dateColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getFechaHora()));
 
         startListeningForMessages();
+    }
+
+    private void configureViewByRole() {
+        if ("user".equalsIgnoreCase(rolUser)) {
+            adminPanel.setVisible(false);
+            adminPanel.setManaged(false);
+        } else if ("admin".equalsIgnoreCase(rolUser)) {
+            adminPanel.setVisible(true);
+            adminPanel.setManaged(true);
+        } else {
+            mostrarError("Rol no reconocido: " + rolUser);
+        }
     }
 
     private void startListeningForMessages() {
@@ -72,7 +91,6 @@ public class MensajesController {
                             String mensaje = userMessage[1];
                             String fechaHora = parts[1];
 
-                            // Añadir el mensaje a la tabla
                             Platform.runLater(() -> {
                                 messageTable.getItems().add(new MensajeView(usuario, mensaje, fechaHora));
                             });
@@ -119,5 +137,13 @@ public class MensajesController {
             e.printStackTrace();
             System.err.println("Error al enviar el mensaje al servidor.");
         }
+    }
+
+    private void mostrarError(String mensaje) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText("Error en la vista de mensajes");
+        alert.setContentText(mensaje);
+        alert.showAndWait();
     }
 }
